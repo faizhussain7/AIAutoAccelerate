@@ -111,7 +111,7 @@ export default function Index() {
 
     try {
       const response = await fetch(
-        "https://autoaccelerate-api.onrender.com/autogenerate",
+        "your API url",
         {
           method: "POST",
           headers: {

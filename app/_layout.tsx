@@ -1,4 +1,3 @@
-import HeaderWithLoopingSVGs from "@/components/Header";
 import { FIREBASE_AUTH } from "@/firebaseConfig";
 import Theme from "@/hooks/Theme";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -16,22 +15,36 @@ const Layout = () => {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<User | null>();
 
+  // State to track if the layout is fully mounted
+  const [layoutMounted, setLayoutMounted] = useState(false);
+
+  // Firebase Auth State
   useEffect(() => {
-    // Handle user state changes
     const handleAuthStateChanged = (user: User | null) => {
       console.log("OnAuthStateChanged", user);
       setUser(user);
-
       if (initializing) {
-        setInitializing(false);
+        setInitializing(false); // Stop the initialization process
       }
     };
 
-    // Subscribe to auth state changes
+    // Subscribe to Firebase auth state changes
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(handleAuthStateChanged);
 
-    // Handle redirection based on auth state and route group
+    // Clean up subscription on unmount
+    return () => subscriber();
+  }, []);
+
+  // Handle layout mounting logic
+  useEffect(() => {
     if (!initializing) {
+      setLayoutMounted(true); // Mark layout as mounted after initializing is done
+    }
+  }, [initializing]);
+
+  // Handle navigation based on Firebase user state
+  useEffect(() => {
+    if (layoutMounted && !initializing) {
       const inAuthGroup = segments[0] === "(drawer)";
 
       if (user && !inAuthGroup) {
@@ -40,12 +53,10 @@ const Layout = () => {
         router.replace("/");
       }
     }
+  }, [layoutMounted, user, initializing, segments]);
 
-    // Clean up the subscription on unmount
-    return () => subscriber();
-  }, [user, initializing, segments]); // Dependencies for reactivity
-
-  if (initializing)
+  // Show a loading screen while Firebase is initializing
+  if (initializing || !layoutMounted) {
     return (
       <View
         style={{
@@ -58,6 +69,7 @@ const Layout = () => {
         <ActivityIndicator size={"large"} color={theme.colors.primary} />
       </View>
     );
+  }
 
   return (
     <Stack>

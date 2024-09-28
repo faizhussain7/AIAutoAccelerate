@@ -1,4 +1,10 @@
-# AI Auto Accelerate
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/7ee5bce7-4d15-4b16-8ef2-97b21880ea5a" alt="Logo"></td>
+    <td><h1>AI Auto Accelerate</h1></td>
+  </tr>
+</table>
+
 
 **AI Auto Accelerate** is a Generative AI-powered app that provides intelligent suggestions and information related to automobiles and cars. Built as a full-stack solution, it's optimized primarily for mobile platforms, offering a smooth user experience.
 

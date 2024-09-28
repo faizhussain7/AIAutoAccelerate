@@ -22,6 +22,14 @@
 - **Authentication**: Firebase Authentication for secure Google Sign-In.
 - **State Management**: AsyncStorage for firebase persistence.
 
+---
+
+### Try the App
+
+You can [**download the APK here**](https://drive.google.com/file/d/1fPGwmALUbdak2m7VzNbveo-acSPww_4j/view?usp=sharing) to test and explore the app on your Android device.
+
+---
+
 ## Installation & Setup
 
 To get started, follow these steps:
@@ -30,6 +38,16 @@ To get started, follow these steps:
    ```bash
    git clone https://github.com/your-repo/AIAutoAccelerate.git
    cd AIAutoAccelerate
+   ```
+
+2. **Create a `.env` file** in the root folder with the following variables:
+   ```
+   EXPO_PUBLIC_FIREBASE_API_KEY
+   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN
+   EXPO_PUBLIC_FIREBASE_PROJECT_ID
+   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET
+   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+   EXPO_PUBLIC_FIREBASE_APP_ID
    ```
 
 2. **Install dependencies**:

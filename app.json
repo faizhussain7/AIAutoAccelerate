@@ -38,9 +38,17 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": ["expo-router", "@react-native-google-signin/google-signin"],
+    "plugins": [
+      "expo-router",
+      "@react-native-google-signin/google-signin"
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "040c101b-0da1-40ac-9609-431193f3dcc8"
+      }
     }
   }
 }

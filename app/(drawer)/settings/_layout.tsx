@@ -1,4 +1,8 @@
-import { TouchableOpacity, useColorScheme } from "react-native";
+import {
+  TouchableOpacity,
+  useColorScheme,
+  useWindowDimensions,
+} from "react-native";
 import React from "react";
 import Theme from "@/hooks/Theme";
 import { Stack } from "expo-router";
@@ -9,6 +13,8 @@ const Layout = () => {
   const colorScheme = useColorScheme();
   const theme = new Theme(colorScheme === "dark").getTheme();
   const navigation = useNavigation(); // Get navigation object
+  const window = useWindowDimensions();
+  const isWebOrLargeScreen = window.width >= 768;
 
   return (
     <Stack>
@@ -44,6 +50,7 @@ const Layout = () => {
           headerStyle: {
             backgroundColor: theme.colors.statusBar,
           },
+          headerShown: !isWebOrLargeScreen,
           headerTitleStyle: {
             color: theme.colors.text,
           },

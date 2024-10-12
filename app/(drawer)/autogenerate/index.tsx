@@ -12,6 +12,9 @@ import {
   Alert,
   ActivityIndicator,
   Keyboard,
+  useWindowDimensions,
+  Pressable,
+  Vibration,
 } from "react-native";
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,6 +31,7 @@ export default function Index() {
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [showAllModels, setShowAllModels] = useState(false);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const screen = useWindowDimensions();
 
   const handleBrandSelect = (brand: string) => {
     setSelectedBrand(brand);
@@ -91,11 +95,19 @@ export default function Index() {
       selectedModels.length === 0 ||
       selectedFeatures.length === 0
     ) {
-      Alert.alert(
-        "Incomplete Selection",
-        "Please select a brand, models, and features before generating."
-      );
-      return;
+      if (Platform.OS === "web") {
+        // For web, use a window.confirm dialog
+        window.confirm(
+          "Please select a brand, models, and features before generating."
+        );
+        return;
+      } else {
+        Alert.alert(
+          "Incomplete Selection",
+          "Please select a brand, models, and features before generating."
+        );
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -111,7 +123,7 @@ export default function Index() {
 
     try {
       const response = await fetch(
-        "your API url",
+        "https://autoaccelerate-api.onrender.com/autogenerate",
         {
           method: "POST",
           headers: {
@@ -133,10 +145,18 @@ export default function Index() {
         data.response ===
         "The provided information is unrelated to automobiles or vehicles. Please provide relevant car-related details."
       ) {
-        Alert.alert(
-          "Unrelated Information",
-          "The provided information is unrelated to automobiles or vehicles. Please provide relevant car-related details."
-        );
+        if (Platform.OS === "web") {
+          // For web, use a window.confirm dialog
+          window.confirm(
+            "The provided information is unrelated to automobiles or vehicles. Please provide relevant car-related details."
+          );
+          return;
+        } else {
+          Alert.alert(
+            "Unrelated Information",
+            "The provided information is unrelated to automobiles or vehicles. Please provide relevant car-related details."
+          );
+        }
         return; // Stop the execution here without navigating to the response page
       } else {
         // Navigate only if the response is related
@@ -147,10 +167,16 @@ export default function Index() {
       }
     } catch (error) {
       console.error("Error calling Auto Accelerate API:", error);
-      Alert.alert(
-        "Error",
-        "Unable to generate content. Please try again later."
-      );
+      if (Platform.OS === "web") {
+        // For web, use a window.confirm dialog
+        window.confirm("Unable to generate content. Please try again later.");
+        return;
+      } else {
+        Alert.alert(
+          "Error",
+          "Unable to generate content. Please try again later."
+        );
+      }
     } finally {
       setIsLoading(false);
       // Clear the payload by resetting the state
@@ -160,6 +186,9 @@ export default function Index() {
       setUserInput("");
     }
   };
+
+  const isWebOrLargeScreen = screen.width >= 768;
+  const [isHovered, setIsHovered] = useState(false); // State for hover effect
 
   return (
     <View
@@ -182,7 +211,12 @@ export default function Index() {
             !(Platform.OS === "android" || Platform.OS === "ios")
           }
         >
-          <View style={styles.cardContainer}>
+          <View
+            style={[
+              styles.cardContainer,
+              { flexDirection: !isWebOrLargeScreen ? "column" : "row" },
+            ]}
+          >
             {/* Brands Section */}
             <View
               style={[
@@ -194,6 +228,7 @@ export default function Index() {
                   shadowColor: theme.colors.shadowColor,
                   shadowRadius: theme.spacing.small,
                   borderColor: theme.colors.borderColor,
+                  width: isWebOrLargeScreen ? "30%" : "100%", // Adjust width for web
                 },
               ]}
             >
@@ -282,6 +317,7 @@ export default function Index() {
                     shadowColor: theme.colors.shadowColor,
                     shadowRadius: theme.spacing.small,
                     borderColor: theme.colors.borderColor,
+                    width: isWebOrLargeScreen ? "30%" : "100%", // Adjust width for web
                   },
                 ]}
               >
@@ -391,6 +427,7 @@ export default function Index() {
                   shadowColor: theme.colors.shadowColor,
                   shadowRadius: theme.spacing.small,
                   borderColor: theme.colors.borderColor,
+                  width: isWebOrLargeScreen ? "30%" : "100%", // Adjust width for web
                 },
               ]}
             >
@@ -483,6 +520,7 @@ export default function Index() {
                   shadowColor: theme.colors.shadowColor,
                   shadowRadius: theme.spacing.small,
                   borderColor: theme.colors.borderColor,
+                  width: isWebOrLargeScreen ? "30%" : "100%", // Adjust width for web
                 },
               ]}
             >
@@ -573,24 +611,80 @@ export default function Index() {
           </Modal>
         </ScrollView>
       </View>
-
-      <TouchableOpacity
-        style={[
-          styles.btn,
-          { backgroundColor: theme.colors.buttonBackground },
-          isLoading && { opacity: 0.5 },
-        ]}
-        onPress={handleAutoAccelerate}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color={theme.colors.buttonText} />
-        ) : (
-          <Text style={[styles.btnText, { color: theme.colors.buttonText }]}>
-            ✦ Auto Accelerate
-          </Text>
-        )}
-      </TouchableOpacity>
+      {isWebOrLargeScreen ? (
+        <View style={{ position: "absolute", bottom: 5, right: 20 }}>
+          <Pressable
+            style={[
+              styles.btn,
+              {
+                backgroundColor: isHovered
+                  ? theme.colors.buttonText
+                  : theme.colors.buttonBackground,
+                margin: 5,
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                elevation: 1,
+                shadowOffset: { width: 0, height: 1 },
+              },
+              isLoading && { opacity: 0.5 },
+            ]}
+            onPress={handleAutoAccelerate}
+            disabled={isLoading}
+            onHoverIn={() => setIsHovered(true)} // Handle mouse hover in
+            onHoverOut={() => setIsHovered(false)} // Handle mouse hover out
+          >
+            {isLoading ? (
+              <ActivityIndicator color={theme.colors.buttonText} />
+            ) : (
+              <Text
+                style={[
+                  styles.btnText,
+                  {
+                    color: isHovered
+                      ? theme.colors.buttonBackground
+                      : theme.colors.buttonText,
+                  },
+                ]}
+              >
+                ✦ Auto Accelerate
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          style={[
+            styles.btn,
+            {
+              backgroundColor: theme.colors.buttonBackground,
+              margin: isWebOrLargeScreen ? 5 : 10,
+              paddingVertical: isWebOrLargeScreen ? 6 : 10,
+              paddingHorizontal: isWebOrLargeScreen ? 12 : 20,
+              elevation: isWebOrLargeScreen ? 1 : 5, // Lighter elevation on web
+              shadowOffset: isWebOrLargeScreen
+                ? { width: 0, height: 1 }
+                : { width: 0, height: 3 },
+            },
+            isLoading && { opacity: 0.5 },
+          ]}
+          onPress={handleAutoAccelerate}
+          disabled={isLoading}
+          android_ripple={{
+            borderless: false,
+            foreground: true,
+            color: theme.colors.buttonText,
+          }}
+          onLongPress={() => Vibration.vibrate([0, 100], false)}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={theme.colors.buttonText} />
+          ) : (
+            <Text style={[styles.btnText, { color: theme.colors.buttonText }]}>
+              ✦ Auto Accelerate
+            </Text>
+          )}
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -603,12 +697,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   cardContainer: {
-    flexDirection:
-      Platform.OS === "web" ||
-      Platform.OS === "windows" ||
-      Platform.OS === "macos"
-        ? "row"
-        : "column", // Row for web, column for mobile
     flexWrap: "wrap",
     gap:
       Platform.OS === "web" ||
@@ -618,17 +706,10 @@ const styles = StyleSheet.create({
         : 20, // Adjust width for web
   },
   card: {
-    flex: 1,
     elevation: 5, // Adds shadow on Android
     shadowOffset: { width: 0, height: 2 }, // Adds shadow on iOS
     shadowOpacity: 0.3, // Adds shadow on iOS
     borderWidth: 1,
-    width:
-      Platform.OS === "web" ||
-      Platform.OS === "windows" ||
-      Platform.OS === "macos"
-        ? "30%"
-        : "100%", // Adjust width for web
   },
   chipContainer: {
     flexDirection: "row",
@@ -704,15 +785,12 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   btn: {
-    margin: 10,
-    padding: 10,
     alignItems: "center",
-    justifyContent: "center", // Centers the text vertically
-    borderRadius: 10,
-    elevation: 5, // Increased elevation for a more prominent shadow on Android
-    shadowOffset: { width: 0, height: 3 }, // Increased shadow offset for a more pronounced effect on iOS
-    shadowOpacity: 0.5, // Increased shadow opacity for a more pronounced effect on iOS
-    shadowRadius: 10, // Increased shadow radius for a more pronounced effect on iOS
+    justifyContent: "center",
+    borderRadius: 5,
+    backgroundColor: "#3498db", // Example background color
+    shadowOpacity: 0.2, // Lighter shadow for iOS/web
+    shadowRadius: 3, // Reduced shadow blur for web
   },
   btnText: {
     fontSize: 20, // Increased font size for better readability

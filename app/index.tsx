@@ -169,7 +169,7 @@ const Login = () => {
       >
         <View style={styles.content}>
           <SvgCar
-            style={styles.carImage}
+            style={[styles.carImage, { maxHeight: "50%" }]}
             stroke={theme.colors.iconButton}
             strokeWidth="1"
             color={theme.colors.iconButton}
@@ -295,7 +295,6 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   carImage: {
-    maxHeight: "50%",
     objectFit: "contain",
     zIndex: 0,
   },

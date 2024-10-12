@@ -19,9 +19,11 @@ import {
   Modal,
   useWindowDimensions,
   Linking,
+  Dimensions,
+  Pressable,
 } from "react-native";
 import Theme from "@/hooks/Theme";
-import { useRouter } from "expo-router";
+import { Link, Slot, useNavigation, usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   DrawerContentScrollView,
@@ -36,8 +38,10 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { useRoute } from "@react-navigation/native";
 
 const carSvgs = [SvgCarFront, SvgCarFront2, SvgCarBack, SvgCarBack2];
 
@@ -365,9 +369,371 @@ function CustomDrawerContent(props: any) {
   );
 }
 
+const WebNavHeader = () => {
+  const colorScheme = useColorScheme();
+  const theme = new Theme(colorScheme === "dark").getTheme();
+  const { top } = useSafeAreaInsets();
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Throttle the SVG rotation to avoid potential glitches
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % carSvgs.length);
+    }, 2000); // Change SVG every 2 seconds to reduce rapid updates
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const CurrentCar = carSvgs[currentIndex];
+
+  const signOut = async () => {
+    try {
+      await GoogleSignin.revokeAccess();
+      await GoogleSignin.signOut();
+      await auth.signOut();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const confirmLogout = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to log out?");
+      if (confirmed) {
+        signOut();
+      }
+    }
+  };
+
+  const pathname = usePathname();
+
+  const isPage = (path: string) => pathname === path;
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const cardImageScale = useSharedValue(1);
+  const cardImageOpacity = useSharedValue(1);
+  const modalImageScale = useSharedValue(1);
+  const modalImageOpacity = useSharedValue(0);
+  const modalImageTranslateX = useSharedValue(0);
+  const modalImageTranslateY = useSharedValue(0);
+  const imageRef = useRef<Image>(null);
+  const [imageLayout, setImageLayout] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  const animatedCardImageStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardImageScale.value }],
+    opacity: cardImageOpacity.value,
+  }));
+
+  const animatedModalImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: modalImageScale.value },
+      { translateX: modalImageTranslateX.value },
+      { translateY: modalImageTranslateY.value },
+    ],
+    opacity: modalImageOpacity.value,
+  }));
+
+  const openModal = () => {
+    if (imageRef.current) {
+      imageRef.current.measure((x, y, width, height, pageX, pageY) => {
+        const centerX = windowWidth / 2 - width / 2;
+        const centerY = windowHeight / 2 - height / 2;
+        const initialTranslateX = pageX - centerX;
+        const initialTranslateY = pageY - centerY;
+
+        setImageLayout({ x: pageX, y: pageY, width, height });
+        setModalVisible(true);
+
+        // Using `withSpring` for more fluid transitions
+        cardImageScale.value = withSpring(0.5);
+        cardImageOpacity.value = withSpring(0);
+        modalImageScale.value = withSpring(3);
+        modalImageOpacity.value = withSpring(1);
+        modalImageTranslateX.value = withTiming(0);
+        modalImageTranslateY.value = withTiming(0);
+      });
+    }
+  };
+
+  const closeModal = () => {
+    const finalTranslateX =
+      imageLayout.x - (windowWidth / 2 - imageLayout.width / 2);
+    const finalTranslateY =
+      imageLayout.y - (windowHeight / 2 - imageLayout.height / 2);
+
+    // Reverse the animations
+    cardImageScale.value = withSpring(1);
+    cardImageOpacity.value = withSpring(1);
+    modalImageScale.value = withTiming(1);
+    modalImageOpacity.value = withTiming(0);
+    modalImageTranslateX.value = withTiming(finalTranslateX, { duration: 300 });
+    modalImageTranslateY.value = withTiming(
+      finalTranslateY,
+      { duration: 300 },
+      () => {
+        runOnJS(setModalVisible)(false);
+      }
+    );
+  };
+
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <View
+      style={[
+        styles.webNavHeader,
+        {
+          backgroundColor: theme.colors.background,
+          paddingTop: top,
+        },
+      ]}
+    >
+      <View style={styles.webNavContent}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <CurrentCar width={40} height={40} fill={theme.colors.text} />
+          <Text style={[styles.logo, { color: theme.colors.text }]}>
+            AIAutoAccelerate
+          </Text>
+        </View>
+        <View style={styles.webNavLinks}>
+          <Link
+            href="/autogenerate"
+            style={[
+              styles.webNavLink,
+              {
+                backgroundColor: isPage("/autogenerate")
+                  ? theme.colors.drawerActiveBackgroundColor
+                  : theme.colors.drawerActiveTintColor,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: isPage("/autogenerate")
+                  ? theme.colors.drawerActiveTintColor
+                  : theme.colors.drawerActiveBackgroundColor,
+              }}
+            >
+              AutoGenAI
+            </Text>
+          </Link>
+          <Link
+            href="/settings"
+            style={[
+              styles.webNavLink,
+              {
+                backgroundColor: isPage("/settings")
+                  ? theme.colors.drawerActiveBackgroundColor
+                  : theme.colors.drawerActiveTintColor,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: isPage("/settings")
+                  ? theme.colors.drawerActiveTintColor
+                  : theme.colors.drawerActiveBackgroundColor,
+              }}
+            >
+              Settings
+            </Text>
+          </Link>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {user?.photoURL ? (
+            <TouchableOpacity onPress={openModal}>
+              <Animated.Image
+                ref={imageRef}
+                source={{ uri: user.photoURL }}
+                style={[
+                  {
+                    borderWidth: 3,
+                    borderColor: theme.colors.primary,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 50,
+                    alignSelf: "center",
+                  },
+                  animatedCardImageStyle,
+                ]}
+              />
+            </TouchableOpacity>
+          ) : (
+            <Ionicons // Replace with your actual icon component
+              name="person-circle" // Assumed icon name for a person icon
+              size={50}
+              color={theme.colors.text}
+              style={{ alignSelf: "center", padding: 5 }}
+            />
+          )}
+        </View>
+        {/* Full-screen image modal */}
+        <Modal
+          visible={modalVisible}
+          transparent={true}
+          animationType="none"
+          statusBarTranslucent={true}
+          onRequestClose={closeModal}
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.modalBackground}
+              onPress={closeModal}
+            >
+              <View
+                style={{
+                  elevation: 5,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.8,
+                  alignItems: "flex-start", // Center everything
+                  width: "30%", // Adjust card width
+                  margin: theme.spacing.medium,
+                  flexDirection: "row",
+                  backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.spacing.medium,
+                  shadowColor: theme.colors.shadowColor,
+                  shadowRadius: theme.spacing.small,
+                  justifyContent: "center",
+                  borderColor: theme.colors.borderColor,
+                }}
+              >
+                <View>
+                  <Animated.Image
+                    source={{ uri: user?.photoURL ?? "" }}
+                    style={[
+                      {
+                        marginStart: imageLayout.width / 0.5,
+                        width: imageLayout.width,
+                        height: imageLayout.height,
+                        borderRadius: imageLayout.width / 2,
+                      },
+                      animatedModalImageStyle,
+                    ]}
+                  />
+                  <Text
+                    style={{
+                      color: theme.colors.text,
+                      marginTop: 50,
+                      marginStart: imageLayout.width / 0.8,
+                      marginBottom: theme.spacing.medium,
+                      textAlign: "center",
+                      fontSize: theme.fonts.header,
+                      fontWeight: "bold",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {user?.displayName ?? "User Name"}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexGrow: 1,
+                    height: "100%",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Pressable
+                    style={{
+                      alignItems: "center",
+                      borderRadius: theme.spacing.small,
+                      padding: theme.spacing.medium,
+                      marginHorizontal: theme.spacing.medium,
+                      justifyContent: "center",
+                      borderColor: theme.colors.drawerActiveBackgroundColor, // Change color when pressed
+                      borderWidth: 1,
+                    }}
+                    onPress={() => {
+                      const email = "mfaizhussain7@gmail.com";
+                      const subject = "Feedback for AIAutoAccelerate";
+                      const mailto = `mailto:${email}?subject=${encodeURIComponent(
+                        subject
+                      )}`;
+
+                      Linking.openURL(mailto).catch((error) =>
+                        console.error("Error opening email client:", error)
+                      );
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="comment-alert-outline"
+                      size={24}
+                      color={theme.colors.drawerActiveBackgroundColor} // Change icon color
+                    />
+                    <Text
+                      style={{
+                        color: theme.colors.drawerActiveBackgroundColor, // Change text color
+                        fontSize: theme.fonts.regular,
+                      }}
+                    >
+                      Feedback
+                    </Text>
+                  </Pressable>
+
+                  {/* Logout Pressable */}
+                  <Pressable
+                    style={{
+                      alignItems: "center",
+                      borderRadius: theme.spacing.small,
+                      padding: theme.spacing.medium,
+                      marginHorizontal: theme.spacing.medium,
+                      justifyContent: "center",
+                      borderColor: "#FF6F6F",
+                      borderWidth: 1,
+                    }}
+                    onPress={confirmLogout}
+                  >
+                    <MaterialCommunityIcons
+                      name="logout-variant"
+                      size={24}
+                      color={"#FF6F6F"}
+                    />
+                    <Text
+                      style={{
+                        color: "#FF6F6F",
+                        fontSize: theme.fonts.body,
+                      }}
+                    >
+                      Logout
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </View>
+    </View>
+  );
+};
+
 const DrawerLayout = () => {
   const colorScheme = useColorScheme();
   const theme = new Theme(colorScheme === "dark").getTheme();
+  const width = Dimensions.get("window");
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -445,33 +811,20 @@ const DrawerLayout = () => {
     );
   };
 
-  const { width } = useWindowDimensions();
+  const window = useWindowDimensions();
   const [selectedPage, setSelectedPage] = useState<"autogenerate" | "settings">(
     "autogenerate"
   );
 
-  return Platform.OS === "web" ? (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        overflow: "auto",
-        background: theme.colors.drawerBackground,
-      }}
-    >
-      <NavigationBar onSelect={setSelectedPage} selectedPage={selectedPage} />
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          background: theme.colors.drawerBackground,
-        }}
-      >
-        {selectedPage === "autogenerate" && <AutoGenAI />}
-        {selectedPage === "settings" && <Settings />}
-      </div>
-    </div>
+  const isWebOrLargeScreen = window.width >= 768;
+
+  return isWebOrLargeScreen ? (
+    <View style={{ flex: 1 }}>
+      <WebNavHeader />
+      <View style={styles.contentContainer}>
+        <Slot />
+      </View>
+    </View>
   ) : (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
@@ -575,6 +928,37 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
+  },
+  webNavHeader: {
+    height: 60,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  webNavContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  logo: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  webNavLinks: {
+    flexDirection: "row",
+  },
+  webNavLink: {
+    marginLeft: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderWidth: 0, // React Native uses borderWidth instead of 'border'
+    borderRadius: 5,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginHorizontal: 10,
+    // cursor and transition are not supported in React Native
+  },
+  contentContainer: {
+    flex: 1,
   },
 });
 

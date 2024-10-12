@@ -2,12 +2,18 @@ import HeaderWithLoopingSVGs from "@/components/Header";
 import Theme from "@/hooks/Theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import { TouchableOpacity, useColorScheme } from "react-native";
+import {
+  TouchableOpacity,
+  useColorScheme,
+  useWindowDimensions,
+} from "react-native";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = new Theme(colorScheme === "dark").getTheme();
   const router = useRouter(); // Get navigation object
+  const window = useWindowDimensions();
+  const isWebOrLargeScreen = window.width >= 768;
 
   return (
     <Stack
@@ -20,12 +26,13 @@ export default function RootLayout() {
         name="index"
         options={{
           header: () => <HeaderWithLoopingSVGs />,
+          headerShown: !isWebOrLargeScreen,
         }}
       />
       <Stack.Screen
         name="response"
         options={{
-          title: "AI Response",
+          title: "AI Insights",
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => {
@@ -47,7 +54,7 @@ export default function RootLayout() {
               <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
             </TouchableOpacity>
           ),
-          headerTitle: "AI Response",
+          headerTitle: "AI Insights",
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: theme.colors.statusBar,
@@ -55,6 +62,7 @@ export default function RootLayout() {
           headerTitleStyle: {
             color: theme.colors.text,
           },
+          headerShown: !isWebOrLargeScreen,
           presentation: "modal",
         }}
       />

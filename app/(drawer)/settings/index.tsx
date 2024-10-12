@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  useWindowDimensions,
 } from "react-native";
 import React, { useState } from "react";
 import Theme from "@/hooks/Theme";
@@ -20,6 +21,8 @@ const Settings = () => {
   const theme = new Theme(colorScheme === "dark").getTheme(); // Create a theme instance based on the system theme
   const [preferredCarType, setPreferredCarType] = useState("Sedan");
   const [modalVisible, setModalVisible] = useState(false);
+  const window = useWindowDimensions();
+  const isWebOrLargeScreen = window.width >= 768;
 
   return (
     <View
@@ -57,6 +60,7 @@ const Settings = () => {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
+                width: isWebOrLargeScreen ? "30%" : "100%", // Adjust width for web
               },
             ]}
           >
@@ -132,6 +136,11 @@ const Settings = () => {
                 borderRadius: 10,
                 padding: theme.spacing.medium,
                 margin: theme.spacing.small,
+                maxHeight: Platform.select({
+                  web: "80%",
+                  macos: "80%",
+                  windows: "80%",
+                }),
               },
             ]}
           >
@@ -189,12 +198,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 }, // Adds shadow on iOS
     shadowOpacity: 0.3, // Adds shadow on iOS
     borderWidth: 1,
-    width:
-      Platform.OS === "web" ||
-      Platform.OS === "windows" ||
-      Platform.OS === "macos"
-        ? "30%"
-        : "100%", // Adjust width for web
   },
   preferredCarTypeButton: {
     flexDirection: "row",
